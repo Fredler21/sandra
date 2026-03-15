@@ -6,12 +6,20 @@
 /** Roles in a conversation */
 export type MessageRole = 'system' | 'user' | 'assistant' | 'tool';
 
+/** A tool call requested by the model */
+export interface ToolCall {
+  id: string;
+  name: string;
+  arguments: string; // JSON string
+}
+
 /** A single message in a conversation */
 export interface ChatMessage {
   role: MessageRole;
   content: string;
   name?: string;
   toolCallId?: string;
+  toolCalls?: ToolCall[];
 }
 
 /** Tool/function definition for the LLM */
@@ -19,13 +27,6 @@ export interface ToolDefinition {
   name: string;
   description: string;
   parameters: Record<string, unknown>; // JSON Schema object
-}
-
-/** A tool call requested by the model */
-export interface ToolCall {
-  id: string;
-  name: string;
-  arguments: string; // JSON string
 }
 
 /** Request to the chat completion provider */
@@ -68,12 +69,25 @@ export interface EmbeddingResponse {
   };
 }
 
+/** A single chunk from a streaming chat completion */
+export interface StreamChunk {
+  /** Incremental content delta, or null if this chunk carries only tool calls */
+  content: string | null;
+  /** Accumulated tool calls at stream end, or null during content streaming */
+  toolCalls: ToolCall[] | null;
+  /** True on the final chunk when streaming is complete */
+  done: boolean;
+}
+
 /** Interface that all AI providers must implement */
 export interface AIProvider {
   readonly name: string;
 
   chatCompletion(request: ChatCompletionRequest): Promise<ChatCompletionResponse>;
+  streamChatCompletion(request: ChatCompletionRequest): AsyncIterable<StreamChunk>;
   generateEmbeddings(request: EmbeddingRequest): Promise<EmbeddingResponse>;
+  /** Convenience method: generate a single embedding vector for one text */
+  generateEmbedding(text: string): Promise<number[]>;
 
   /** Check whether the provider is configured and reachable */
   healthCheck(): Promise<boolean>;

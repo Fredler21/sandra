@@ -44,3 +44,7 @@ coverage/
 
 # Misc
 *.log
+.claude/
+.dkmv/runs/
+dkmv/
+tasks/
